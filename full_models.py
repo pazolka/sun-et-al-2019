@@ -1,5 +1,6 @@
 from keras.models import Model
-from keras.layers import Conv2D, Input, Masking, Concatenate, MaxPooling2D, UpSampling2D, Conv2DTranspose
+from keras.layers import Conv2D, Input, Masking, Concatenate, MaxPooling2D, UpSampling2D, Conv2DTranspose, Flatten, Dense, Reshape
+import keras.applications
 
 def unet_full(filters):
 	input1 = Input((128,128,3))
@@ -13,7 +14,7 @@ def unet_full(filters):
 	conv3 = Conv2D(filters, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(masked_input3)
 	
 	merged_features = Concatenate()([conv1, conv2, conv3])
-
+	
 	conv1 = Conv2D(32, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merged_features)
 	conv1 = Conv2D(32, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
 	pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
@@ -99,3 +100,63 @@ def segnetlite_full(filters):
 	model = Model(inputs = [input1, input2, input3], outputs = conv12)
 	
 	return model
+
+def vgg16_full():
+    input1 = Input((128,128,3))
+    masked_input1 = Masking(mask_value=1e-7)(input1)
+    #masked_input1 = keras.applications.vgg16.preprocess_input(masked_input1)
+    conv1 = Conv2D(1, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(masked_input1)
+    
+    input2 = Input((128,128,3))
+    masked_input2 = Masking(mask_value=1e-7)(input2)
+    #masked_input2 = keras.applications.vgg16.preprocess_input(masked_input2)
+    conv2 = Conv2D(1, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(masked_input2)
+
+    input3 = Input((128,128,3))
+    masked_input3 = Masking(mask_value=1e-7)(input3)
+    #masked_input3 = keras.applications.vgg16.preprocess_input(masked_input3)
+    conv3 = Conv2D(1, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(masked_input3)
+    
+    merged_features = Concatenate()([conv1, conv2, conv3])
+
+    input_shape = (128,128,3)
+
+    base = keras.applications.VGG16(include_top=False,
+                     weights='imagenet', 
+                     input_shape=input_shape)
+	
+    for layer in base.layers:
+        layer.trainable = False
+
+    top_layer = base(merged_features)
+
+    # conv1 = Conv2D(64, 3, padding="same", activation="relu")(merged_featured)
+    # conv2 = Conv2D(64, 3, padding="same", activation="relu")(conv1)
+    # pool1 = MaxPooling2D((2,2), (2,2))(conv2)
+
+    # conv3 = Conv2D(128, 3, padding="same", activation="relu")(pool1)
+    # conv4 = Conv2D(128, 3, padding="same", activation="relu")(conv3)
+    # pool2 = MaxPooling2D((2,2),(2,2))(conv4)
+
+    # conv5 = Conv2D(256, 3, padding="same", activation="relu")(pool2)
+    # conv6 = Conv2D(256, 3, padding="same", activation="relu")(conv5)
+    # conv7 = Conv2D(256, 3, padding="same", activation="relu")(conv6)
+    # pool3 = MaxPooling2D((2,2), (2,2))(conv7)
+
+    # conv8 = Conv2D(512, 3, padding="same", activation="relu")(pool3)
+    # conv9 = Conv2D(512, 3, padding="same", activation="relu")(conv8)
+    # conv10 = Conv2D(512, 3, padding="same", activation="relu")(conv9)
+    # pool4 = MaxPooling2D((2,2), (2,2))(conv10)
+
+    # conv11 = Conv2D(512, 3, padding="same", activation="relu")(pool4)
+    # conv12 = Conv2D(512, 3, padding="same", activation="relu")(conv11)
+    # conv13 = Conv2D(512, 3, padding="same", activation="relu")(conv12)
+    # pool5 = MaxPooling2D((2,2),(2,2))(conv13)
+	
+    flatten = Flatten()(top_layer)
+    dense = Dense(128*128, activation='linear')(flatten)
+    output = Reshape((128, 128, 1))(dense)
+    
+    model = Model(inputs = [input1, input2, input3], outputs = output)
+
+    return model

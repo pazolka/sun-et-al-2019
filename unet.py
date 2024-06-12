@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Input, concatenate, UpSampling2D
+from keras.layers import Conv2D, MaxPooling2D, Dropout, Input, Concatenate, UpSampling2D
 
 
 def unet(input_shape):
@@ -11,8 +11,8 @@ def unet(input_shape):
     	model
 	"""
 	inputs = Input(input_shape)
-
-    conv1 = Conv2D(32, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
+	
+	conv1 = Conv2D(32, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
 	conv1 = Conv2D(32, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
 	pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
     
